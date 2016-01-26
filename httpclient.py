@@ -29,7 +29,7 @@ def help():
 
 class HTTPResponse(object):
     def __init__(self, code=200, body=""):
-        self.code = code
+        self.code = code 
         self.body = body
 
 class HTTPClient(object):
