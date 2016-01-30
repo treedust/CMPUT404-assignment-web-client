@@ -112,11 +112,11 @@ class HTTPClient(object):
         except:
             #error connecting to host 
             return HTTPResponse(code, body)
-        request = "GET / HTTP/1.0\n\n"
+        request = "GET / HTTP/1.1\nHost: "+str(host)+"\n\n"
         self.clientSocket.sendall(request)
         print ('Host is: ', host) 
-        print (self.recvall(self.clientSocket))
-        sys.stdout.flush()
+        response = self.recvall(self.clientSocket)
+        
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
@@ -124,7 +124,7 @@ class HTTPClient(object):
         body = ""
         host, path, port =  self.get_host_port(url)
         try:
-            self.connect(host+"/", int(port) ) 
+            self.connect(host, int(port) ) 
         except:
             #error connecting to host 
             return HTTPResponse(code, body)
