@@ -34,53 +34,42 @@ class HTTPResponse(object):
 
 class HTTPClient(object):
     def get_host_port(self,url):
-        parts  = url.split(':')
-        address = ""
-        port    = ""
-        path    = ""
-        if (parts[0] == 'http'):
-            if len(parts) > 2:
-                #got a port
-                portNpath = parts[2].split('/')
-                port = portNpath[0]
-                try:
-                    int(port)
-                    for i in portNpath[1:-1]:
-                        path += i
-                        path += '/'
-                    path += portNpath[-1]
-                except:
-                    for i in portNpath[1:-1]:
-                        path += i
-                        path += '/'
-                    if portNpath[-1] == '':
-                        path += '/'
-                    else:
-                        path += portNpath[-1]
-                    port = 80 
-                address = parts[1]
-            else:
-                #port is 80 
+        host = ""
+        port = 80
+        tmpurl = url
+        try:
+            re.search('^HTTP://|http://',tmpurl).group(0)
+        except:
+            tmpurl ='HTTP://'+tmpurl        
+        hostport1 = re.search('(?<=(HTTP://|http://)).*(?<=[:\d+])',tmpurl)
+        try:
+            host = hostport1.group(0).split(":")[0]
+            port = hostport1.group(0).split(":")[1]
+            if port == '':
+                host += ":" 
                 port = 80
-                getPath = parts[1].split('/')
-                address = '//'+getPath[2]
-                for i in getPath[1:-1]:
+            if "/" in port:
+                port = port.split("/")[0]
+            return [host,port]
+        except:
+            #no port found 
+            #split on /
+            host = tmpurl.split("/")[2]
+        try:
+            path = "/"
+            for i in tmpurl.split("/")[3:]:
+                if i == '':
                     path += i
-                    path += '/'
-                if getPath[-1] == '':
-                    path += '/'
-                else:
-                    path += getPath[-1]
-        else:
-            self.get_host_port("http://"+url)
-        # [http: , //address, path, to, dst ], port 
-        return address[2:], path, port 
+            return [host,port,path]
+        except:
+        	pass
+        return [host,port,"/"]
 
     def connect(self, host, port):
-        # use sockets!
-        self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.clientSocket.connect((host, port))
-        return None
+        # use sockets
+        mysocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        mysocket.connect((host,port))
+        return mysocket 
 
     def get_code(self, data):
         return None
@@ -106,28 +95,31 @@ class HTTPClient(object):
     def GET(self, url, args=None):
         code = 500
         body = ""
-        host, path, port =  self.get_host_port(url)
+        hp = self.get_host_port(url)
+        s = self.connect(hp[0],int(hp[1]))
+        s.sendall("GET / HTTP/1.1\nHost: "+str(hp[0])+"\r\n\r\n")
+        response = self.recvall(s)
+        print (response)
+        sys.stdout.flush()
+        a = re.search('^HTTP/1\..*',response)
         try:
-            self.connect(host, int(port) ) 
+        	HTTPcodemsg = a.group(0)
+        	code = HTTPcodemsg.split(" ")[1]
         except:
-            #error connecting to host 
-            return HTTPResponse(code, body)
-        request = "GET / HTTP/1.1\nHost: "+str(host)+"\n\n"
-        self.clientSocket.sendall(request)
-        print ('Host is: ', host) 
-        response = self.recvall(self.clientSocket)
-        
-        return HTTPResponse(code, body)
+        	pass
+        #get body 
+        try:
+        	body = re.search('<(HTML|html)>[\S\s]*',response).group(0)
+        except:
+        	body = ""
+        print ("Code: " + str(code))
+        print (body)
+        sys.stdout.flush()
+        return HTTPResponse(int(code), body)
 
     def POST(self, url, args=None):
         code = 500
         body = ""
-        host, path, port =  self.get_host_port(url)
-        try:
-            self.connect(host, int(port) ) 
-        except:
-            #error connecting to host 
-            return HTTPResponse(code, body)
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
@@ -138,7 +130,6 @@ class HTTPClient(object):
     
 if __name__ == "__main__":
     client = HTTPClient()
-    #client.connect("www.mcmillan-inc.com",80)
     command = "GET"
     if (len(sys.argv) <= 1):
         help()
@@ -146,4 +137,4 @@ if __name__ == "__main__":
     elif (len(sys.argv) == 3):
         print client.command( sys.argv[2], sys.argv[1] )
     else:
-        print client.command( sys.argv[1] )
+        print client.command( sys.argv[1] )   
