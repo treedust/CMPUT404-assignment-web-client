@@ -76,7 +76,8 @@ class HTTPClient(object):
         return int(data.split(" ")[1])
 
     def get_headers(self,data):
-        return None
+        header = re.search('[\S\s]*(?<=\r\n\r\n)',data).group(0)
+        return str(header)
 
     def get_body(self, data):
         body = re.search('(?<=\r\n\r\n)[\S\s]*',data).group(0)
@@ -104,11 +105,13 @@ class HTTPClient(object):
         print (response)
         sys.stdout.flush()
         try:
-            code = self.get_code(response)
-            body = self.get_body(response)
+            header = self.get_headers(response)
+            code   = self.get_code(response)
+            body   = self.get_body(response)
         except:
-            code = int(404)
-            body = '<HTML><head><title>404 Not Found</title><meta charset="UTF-8"/></head></HTML>'
+            header = ""
+            code   = int(404)
+            body   = '<HTML><head><title>404 Not Found</title><meta charset="UTF-8"/></head></HTML>'
         #print ("Code: " + str(code))
         #print (body)
         #sys.stdout.flush()
