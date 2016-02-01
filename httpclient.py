@@ -42,6 +42,7 @@ class HTTPClient(object):
         except:
             tmpurl ='HTTP://'+tmpurl        
         hostport1 = re.search('(?<=(HTTP://|http://)).*(?<=[:\d+])',tmpurl)
+        #find port
         try:
             host = hostport1.group(0).split(":")[0]
             port = hostport1.group(0).split(":")[1]
@@ -54,6 +55,7 @@ class HTTPClient(object):
             #no port found 
             #split on /
             host = tmpurl.split("/")[2]
+        #find path 
         try:
             path = ""
             for i in tmpurl.split("/")[3:]:
