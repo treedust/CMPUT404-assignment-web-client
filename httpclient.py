@@ -78,8 +78,14 @@ class HTTPClient(object):
         return int(data.split(" ")[1])
 
     def get_headers(self,data):
-        header = re.search('[\S\s]*(?<=\r\n\r\n)',data).group(0)
-        return str(header)
+        response = data.split("\r\n")
+        headers  = ""
+        for i in response:
+            if i in '':
+                break
+            else:
+                headers += i+"\r\n"
+        return headers
 
     def get_body(self, data):
         body = re.search('(?<=\r\n\r\n)[\S\s]*',data).group(0)
@@ -104,8 +110,6 @@ class HTTPClient(object):
         s    = self.connect(hp[0],int(hp[1]))
         s.sendall("GET "+hp[2]+" HTTP/1.1\nHost: "+str(hp[0])+"\r\nAccept: */*\r\nConnection: close\r\n\r\n")
         response = self.recvall(s)
-        #print (response)
-        sys.stdout.flush()
         try:
             header = self.get_headers(response)
             code   = self.get_code(response)
@@ -114,9 +118,9 @@ class HTTPClient(object):
             header = ""
             code   = int(404)
             body   = '<HTML><head><title>404 Not Found</title><meta charset="UTF-8"/></head></HTML>'
-        #print ("Code: " + str(code))
-        #print (body)
-        #sys.stdout.flush()
+        print ("\nHeaders: \n\n" + str(header)+"\nCode: \n\n" + str(code))
+        print ("\nBody: \n\n" + str(body))
+        sys.stdout.flush()
         return HTTPResponse(int(code), body)
 
     def POST(self, url, args=None):
@@ -141,6 +145,9 @@ class HTTPClient(object):
             header = ""
             code   = int(404)
             body   = '<HTML><head><title>404 Not Found</title><meta charset="UTF-8"/></head></HTML>'
+        print ("\nHeaders: \n\n" + str(header)+"\nCode: \n\n" + str(code))
+        print ("\nBody: \n\n" + str(body))
+        sys.stdout.flush()
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
