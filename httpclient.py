@@ -34,8 +34,8 @@ class HTTPResponse(object):
 
 class HTTPClient(object):
     def get_host_port(self,url):
-        host = ""
-        port = 80
+        host   = ""
+        port   = 80
         tmpurl = url
         try:
             re.search('^HTTP://|http://',tmpurl).group(0)
@@ -98,11 +98,11 @@ class HTTPClient(object):
     def GET(self, url, args=None):
         code = 500
         body = ""
-        hp = self.get_host_port(url)
-        s = self.connect(hp[0],int(hp[1]))
+        hp   = self.get_host_port(url)
+        s    = self.connect(hp[0],int(hp[1]))
         s.sendall("GET "+hp[2]+" HTTP/1.1\nHost: "+str(hp[0])+"\r\nAccept: */*\r\nConnection: close\r\n\r\n")
         response = self.recvall(s)
-        print (response)
+        #print (response)
         sys.stdout.flush()
         try:
             header = self.get_headers(response)
@@ -120,6 +120,25 @@ class HTTPClient(object):
     def POST(self, url, args=None):
         code = 500
         body = ""
+        hp   = self.get_host_port(url)
+        s    = self.connect(hp[0],int(hp[1]))
+        postvalues = ""
+        if args != None:
+            postvalues = urllib.urlencode(args)
+        request  = "POST "+hp[2]+" HTTP/1.1\nHost: "+str(hp[0])+"\r\n"
+        request += "Content-Length: "+str(len(postvalues))+"\r\n"
+        request += "Content-Type: application/x-www-form-urlencoded\r\nAccept: */*\r\n"
+        request += "Connection: close\r\n\r\n"+postvalues
+        s.sendall(request)
+        response = self.recvall(s)
+        try:
+            header = self.get_headers(response)
+            code   = self.get_code(response)
+            body   = self.get_body(response)
+        except:
+            header = ""
+            code   = int(404)
+            body   = '<HTML><head><title>404 Not Found</title><meta charset="UTF-8"/></head></HTML>'
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
