@@ -50,16 +50,17 @@ class HTTPClient(object):
                 port = 80
             if "/" in port:
                 port = port.split("/")[0]
-            return [host,port]
         except:
             #no port found 
             #split on /
             host = tmpurl.split("/")[2]
         try:
-            path = "/"
+            path = ""
             for i in tmpurl.split("/")[3:]:
                 if i == '':
-                    path += i
+                    path += "/"
+                else:
+                    path+="/"+i
             return [host,port,path]
         except:
         	pass
@@ -72,13 +73,14 @@ class HTTPClient(object):
         return mysocket 
 
     def get_code(self, data):
-        return None
+        return int(data.split(" ")[1])
 
     def get_headers(self,data):
         return None
 
     def get_body(self, data):
-        return None
+        body = re.search('(?<=\r\n\r\n)[\S\s]*',data).group(0)
+        return str(body)
 
     # read everything from the socket
     def recvall(self, sock):
@@ -97,24 +99,19 @@ class HTTPClient(object):
         body = ""
         hp = self.get_host_port(url)
         s = self.connect(hp[0],int(hp[1]))
-        s.sendall("GET / HTTP/1.1\nHost: "+str(hp[0])+"\r\n\r\n")
+        s.sendall("GET "+hp[2]+" HTTP/1.1\nHost: "+str(hp[0])+"\r\nAccept: */*\r\nConnection: close\r\n\r\n")
         response = self.recvall(s)
         print (response)
         sys.stdout.flush()
-        a = re.search('^HTTP/1\..*',response)
         try:
-        	HTTPcodemsg = a.group(0)
-        	code = HTTPcodemsg.split(" ")[1]
+            code = self.get_code(response)
+            body = self.get_body(response)
         except:
-        	pass
-        #get body 
-        try:
-        	body = re.search('<(HTML|html)>[\S\s]*',response).group(0)
-        except:
-        	body = ""
-        print ("Code: " + str(code))
-        print (body)
-        sys.stdout.flush()
+            code = int(404)
+            body = '<HTML><head><title>404 Not Found</title><meta charset="UTF-8"/></head></HTML>'
+        #print ("Code: " + str(code))
+        #print (body)
+        #sys.stdout.flush()
         return HTTPResponse(int(code), body)
 
     def POST(self, url, args=None):
