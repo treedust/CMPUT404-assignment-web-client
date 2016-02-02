@@ -108,7 +108,13 @@ class HTTPClient(object):
         body = ""
         hp   = self.get_host_port(url)
         s    = self.connect(hp[0],int(hp[1]))
-        s.sendall("GET "+hp[2]+" HTTP/1.1\nHost: "+str(hp[0])+"\r\nAccept: */*\r\nConnection: close\r\n\r\n")
+        postvalues = hp[2]
+        if args != None:
+            if '?' not in postvalues:
+                postvalues += '?' + urllib.urlencode(args)
+            else:
+                postvalues += '&' + urllib.urlencode(args)
+        s.sendall("GET "+str(postvalues)+" HTTP/1.1\nHost: "+str(hp[0])+"\r\nAccept: */*\r\nConnection: close\r\n\r\n")
         response = self.recvall(s)
         try:
             header = self.get_headers(response)
